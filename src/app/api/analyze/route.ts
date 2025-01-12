@@ -2,6 +2,12 @@ import { openai } from '@/lib/ai/config';
 import { NextResponse } from 'next/server';
 import { fetchLatestFintechNews } from '@/lib/services/news';
 
+interface NewsArticle {
+  title: string;
+  publishedAt: string;
+  url: string;
+}
+
 export async function POST(req: Request) {
   try {
     const { query } = await req.json();
@@ -12,7 +18,7 @@ export async function POST(req: Request) {
     // Format recent news for context
     const newsContext = latestNews.length > 0
       ? latestNews
-          .map(article => `${article.title} (${article.publishedAt})`)
+          .map((article: NewsArticle) => `${article.title} (${article.publishedAt})`)
           .join('\n')
       : 'No recent news available.';
 
