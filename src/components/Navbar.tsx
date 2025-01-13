@@ -22,7 +22,6 @@ interface PasswordValidation {
 export default function Navbar() {
   const { user } = useAuth();
   const [showSignup, setShowSignup] = useState(false);
-  const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [userPrefs, setUserPrefs] = useState<UserPreferences>({
     occupation: '',

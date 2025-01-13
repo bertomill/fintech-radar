@@ -17,7 +17,6 @@ interface StoryItem {
 export default function NewsStories() {
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [activeStory, setActiveStory] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStories() {
@@ -27,8 +26,6 @@ export default function NewsStories() {
         setStories(data);
       } catch (error) {
         console.error('Error fetching stories:', error);
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -39,35 +36,39 @@ export default function NewsStories() {
     <Box className="border-b border-gray-800 bg-black/30 backdrop-blur-sm">
       <ScrollArea type="always" scrollbars="horizontal">
         <Flex gap="3" py="4" px="6" style={{ minWidth: 'max-content' }}>
-          {stories.map((story) => (
-            <Card
-              key={story.id}
-              className="relative cursor-pointer hover:opacity-90 transition-opacity"
-              style={{
-                width: '180px',
-                height: '240px',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.9)), url(${story.urlToImage})`,
-                borderRadius: '16px',
-              }}
-              onClick={() => setActiveStory(story.id)}
-            >
-              <Flex 
-                direction="column" 
-                justify="between" 
-                style={{ height: '100%' }}
-                p="4"
+          {loading ? (
+            <Text>Loading stories...</Text>
+          ) : (
+            stories.map((story) => (
+              <Card
+                key={story.id}
+                className="relative cursor-pointer hover:opacity-90 transition-opacity"
+                style={{
+                  width: '180px',
+                  height: '240px',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.9)), url(${story.urlToImage})`,
+                  borderRadius: '16px',
+                }}
+                onClick={() => setActiveStory(story.id)}
               >
-                <div className="rounded-full bg-blue-500 w-10 h-10 flex items-center justify-center ring-2 ring-white">
-                  <Text size="3" weight="bold">{story.source.name[0]}</Text>
-                </div>
-                <Text size="2" weight="medium" className="line-clamp-3">
-                  {story.title}
-                </Text>
-              </Flex>
-            </Card>
-          ))}
+                <Flex 
+                  direction="column" 
+                  justify="between" 
+                  style={{ height: '100%' }}
+                  p="4"
+                >
+                  <div className="rounded-full bg-blue-500 w-10 h-10 flex items-center justify-center ring-2 ring-white">
+                    <Text size="3" weight="bold">{story.source.name[0]}</Text>
+                  </div>
+                  <Text size="2" weight="medium" className="line-clamp-3">
+                    {story.title}
+                  </Text>
+                </Flex>
+              </Card>
+            ))
+          )}
         </Flex>
       </ScrollArea>
 

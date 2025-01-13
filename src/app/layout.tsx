@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
-import Navbar from '@/components/Navbar';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 const inter = Inter({
