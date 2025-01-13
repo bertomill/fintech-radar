@@ -17,6 +17,7 @@ interface StoryItem {
 export default function NewsStories() {
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [activeStory, setActiveStory] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStories() {
@@ -26,6 +27,8 @@ export default function NewsStories() {
         setStories(data);
       } catch (error) {
         console.error('Error fetching stories:', error);
+      } finally {
+        setLoading(false);
       }
     }
 
