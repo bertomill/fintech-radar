@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
-import Header from '@/components/Header';
+import Navbar from '@/components/Navbar';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,7 +25,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.variable}>
         <Theme appearance="dark" accentColor="blue" radius="large">
-          <Header />
           {children}
         </Theme>
       </body>
