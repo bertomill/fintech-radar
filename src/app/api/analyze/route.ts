@@ -1,66 +1,63 @@
-import { openai } from '@/lib/ai/config';
-import { NextResponse } from 'next/server';
-import { fetchLatestFintechNews } from '@/lib/services/news';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import OpenAI from 'openai';
 
-interface NewsArticle {
-  title: string;
-  publishedAt: string;
-  url: string;
-}
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: Request) {
   try {
+    const supabase = createRouteHandlerClient({ cookies });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    let userContext = '';
+    if (user) {
+      // Get user preferences
+      const { data: preferences } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (preferences) {
+        userContext = `
+          Consider the user's context:
+          - Occupation: ${preferences.occupation}
+          - Industry: ${preferences.industry}
+          - Interests: ${preferences.interests.join(', ')}
+          
+          Tailor your analysis to be particularly relevant for someone in this position,
+          highlighting aspects that intersect with their industry and interests.
+        `;
+      }
+    }
+
     const { query } = await req.json();
 
-    // Fetch latest news
-    const latestNews = await fetchLatestFintechNews();
-
-    // Format recent news for context
-    const newsContext = latestNews.length > 0
-      ? latestNews
-          .map((article: NewsArticle) => `${article.title} (${article.publishedAt})`)
-          .join('\n')
-      : 'No recent news available.';
-
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
       messages: [
         {
-          role: 'system',
-          content: `You are a specialized fintech analyst AI with deep expertise in fintech analysis.
-            
-            Latest News Context:
-            ${newsContext}
-
-            Important guidelines:
-            - Base your analysis on the provided real-time news
-            - Reference specific news events in your analysis
-            - Highlight immediate market impacts and trends
-            - Include citations to specific news articles when relevant
-            
-            Format your response with:
-            ### [Topic Number]. [Topic Title]
-            Analysis with references to current news`
+          role: "system",
+          content: `You are an expert fintech analyst providing insights about financial technology trends and news.
+            ${userContext}
+            Focus on providing actionable insights and industry implications.
+            Be concise but thorough in your analysis.`
         },
         {
-          role: 'user',
-          content: query,
-        },
+          role: "user",
+          content: query
+        }
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
+      model: "gpt-4-turbo-preview",
     });
 
-    return NextResponse.json({ 
-      analysis: completion.choices[0].message.content,
-      sources: latestNews
+    return Response.json({ 
+      content: completion.choices[0].message.content,
+      personalized: !!userContext // indicate if response was personalized
     });
-    
   } catch (error) {
-    console.error('API error:', error);
-    return NextResponse.json(
-      { error: 'There was an error processing your request' },
-      { status: 500 }
-    );
+    console.error('Error:', error);
+    return Response.json({ error: 'Failed to analyze' }, { status: 500 });
   }
 } 

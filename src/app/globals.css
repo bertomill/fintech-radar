@@ -19,3 +19,14 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.feedback-button-container {
+  position: fixed !important;
+  z-index: 999999 !important;
+  isolation: isolate;
+}
+
+#portal-root {
+  position: relative;
+  z-index: 999999;
+}

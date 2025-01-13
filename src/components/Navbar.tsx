@@ -1,7 +1,7 @@
 'use client';
 
-import { Box, Container, Flex, Text, Button, Dialog, TextField, Tabs } from '@radix-ui/themes';
-import { TargetIcon, PersonIcon, GitHubLogoIcon, ExclamationTriangleIcon, CheckCircledIcon } from '@radix-ui/react-icons';
+import { Box, Container, Flex, Text, Button, Dialog, TextField, Tabs, DropdownMenu, Avatar } from '@radix-ui/themes';
+import { TargetIcon, PersonIcon, GitHubLogoIcon, ExclamationTriangleIcon, CheckCircledIcon, GearIcon, ExitIcon } from '@radix-ui/react-icons';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -155,6 +155,48 @@ export default function Navbar() {
     });
   };
 
+  const handlePreferencesSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    console.log('Submitting preferences:', userPrefs); // Debug log
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user); // Debug log
+      
+      if (!user) throw new Error('No user found');
+
+      const { error, data } = await supabase
+        .from('user_preferences')
+        .upsert({
+          id: user.id,
+          occupation: userPrefs.occupation,
+          industry: userPrefs.industry,
+          interests: userPrefs.interests,
+          updated_at: new Date().toISOString()
+        })
+        .select();
+
+      console.log('Upsert response:', { error, data }); // Debug log
+
+      if (error) throw error;
+
+      setShowSignup(false);
+      setAuthMessage({
+        type: 'success',
+        text: 'Preferences saved successfully!'
+      });
+    } catch (error: any) {
+      console.error('Error saving preferences:', error);
+      setAuthMessage({
+        type: 'error',
+        text: 'Failed to save preferences: ' + error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <Box 
@@ -183,13 +225,45 @@ export default function Navbar() {
             <Flex gap="3" align="center">
               {user ? (
                 <>
-                  <Text size="2">{user.email}</Text>
-                  <Button 
-                    variant="soft" 
-                    onClick={handleSignOut}
-                  >
-                    Sign Out
-                  </Button>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                      <Button variant="ghost" className="rounded-full">
+                        <Avatar
+                          size="2"
+                          src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.email}`}
+                          fallback={user.email?.[0]?.toUpperCase() || '?'}
+                          className="cursor-pointer"
+                        />
+                      </Button>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content>
+                      <DropdownMenu.Label>
+                        <Text size="2" color="gray">
+                          {user.email}
+                        </Text>
+                      </DropdownMenu.Label>
+                      
+                      <DropdownMenu.Separator />
+                      
+                      <DropdownMenu.Item onClick={() => setShowSignup(true)}>
+                        <Flex gap="2" align="center">
+                          <GearIcon />
+                          <Text>Preferences</Text>
+                        </Flex>
+                      </DropdownMenu.Item>
+
+                      <DropdownMenu.Item 
+                        color="red" 
+                        onClick={handleSignOut}
+                      >
+                        <Flex gap="2" align="center">
+                          <ExitIcon />
+                          <Text>Sign Out</Text>
+                        </Flex>
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
+
                   <Button 
                     onClick={() => setShowSignup(true)}
                     className="bg-blue-500 hover:bg-blue-600"
@@ -351,7 +425,8 @@ export default function Navbar() {
               </Tabs.Root>
             </>
           ) : (
-            <form onSubmit={handleSignup}>
+            <form onSubmit={handlePreferencesSubmit}>
+              <Dialog.Title>Update Your Preferences</Dialog.Title>
               <Flex direction="column" gap="3">
                 <TextField.Root>
                   <TextField.Input 
@@ -379,19 +454,40 @@ export default function Navbar() {
                     <Button
                       key={interest}
                       variant="soft"
-                      onClick={() => setUserPrefs(prev => ({
-                        ...prev,
-                        interests: prev.interests.includes(interest)
-                          ? prev.interests.filter(i => i !== interest)
-                          : [...prev.interests, interest]
-                      }))}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setUserPrefs(prev => ({
+                          ...prev,
+                          interests: prev.interests.includes(interest)
+                            ? prev.interests.filter(i => i !== interest)
+                            : [...prev.interests, interest]
+                        }));
+                      }}
                       className={userPrefs.interests.includes(interest) ? 'bg-blue-500' : ''}
                     >
                       {interest}
                     </Button>
                   ))}
                 </Flex>
-                <Button type="submit">Complete Setup</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Saving...' : 'Save Preferences'}
+                </Button>
+                
+                {authMessage && (
+                  <Flex 
+                    gap="2" 
+                    align="center" 
+                    className={authMessage.type === 'error' ? 'text-red-500' : 'text-green-500'}
+                  >
+                    {authMessage.type === 'error' ? (
+                      <ExclamationTriangleIcon />
+                    ) : (
+                      <CheckCircledIcon />
+                    )}
+                    <Text size="2">{authMessage.text}</Text>
+                  </Flex>
+                )}
               </Flex>
             </form>
           )}
